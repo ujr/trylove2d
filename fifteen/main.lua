@@ -3,10 +3,11 @@
 
 
 function love.load()
-  love.graphics.setNewFont(30)
+  love.graphics.setNewFont(36)
 
   gridXCount = 4
   gridYCount = 4
+  state = nil  -- initial --> playing <--> completed
 
   function getInitialValue(x, y)
     return (y - 1) * gridXCount + x
@@ -92,8 +93,19 @@ end
 
 
 function love.keypressed(key)
+  if not state or state == "completed" then
+    if key == 'space' then
+      reset()
+      state = "playing"
+    elseif key == 'escape' then
+      love.event.quit()
+    end
+    return
+  end
+
   if key == 'escape' then
-    love.event.quit()
+    --love.event.quit()
+    state = nil
   elseif key == 'down' then
     move('down')
   elseif key == 'up' then
@@ -105,12 +117,21 @@ function love.keypressed(key)
   end
 
   if isComplete() then
-    reset()  -- start again
+    state = "completed"
+    --reset()  -- start again
   end
 end
 
 
 function love.draw()
+  if not state then
+    love.graphics.setColor(.9, .9, .9)
+    love.graphics.print("Cursor keys move tiles", 100, 50)
+    love.graphics.print("Escape to quit", 100, 100)
+    love.graphics.print("Space to start", 100, 150)
+    return
+  end
+
   local ww, wh = love.graphics.getDimensions()
   local margin = 50
 
@@ -121,6 +142,9 @@ function love.draw()
   local pieceSize = boardSize/gridSize
   local xOrg = 0.5 * (ww - boardSize)
   local yOrg = 0.5 * (wh - boardSize)
+
+  local font = love.graphics.getFont()
+  local textHeight = font:getHeight("123456789")
 
   for y = 1, 4 do
     for x = 1, 4 do
@@ -134,10 +158,25 @@ function love.draw()
           pieceSize - 2, pieceSize - 2)
 
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print(grid[y][x],
-          xOrg + (x - 1) * pieceSize + 0.1*pieceSize,
-          yOrg + (y - 1) * pieceSize + 0.1*pieceSize)
+        --love.graphics.print(grid[y][x],
+        --  xOrg + (x - 1) * pieceSize + 0.1*pieceSize,
+        --  yOrg + (y - 1) * pieceSize + 0.1*pieceSize)
+        love.graphics.printf(grid[y][x],
+          xOrg + (x - 1) * pieceSize,
+          yOrg + (y - 1) * pieceSize + 0.5*(pieceSize - textHeight),
+          pieceSize, "center")
       end
     end
+  end
+
+  if state == "completed" then
+    love.graphics.setColor(1, 1, 1, .5)
+    local overlap = 3
+    love.graphics.rectangle('fill', xOrg-overlap, yOrg-overlap, boardSize+2*overlap, boardSize+2*overlap)
+    local message = "WELL DONE"
+    local font = love.graphics.getFont()
+    local textHeight = font:getHeight(message)
+    love.graphics.setColor(1, 0.4, 0.8, 1)
+    love.graphics.printf(message, ww/4, wh/2 - textHeight/2, ww/2, "center")
   end
 end
